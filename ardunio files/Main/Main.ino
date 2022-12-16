@@ -18,7 +18,7 @@ const int i2c_transmissionbus = 8;
 #define STARTUP_END 255
 
 float fakebuffer[2];
-byte buff_I1C[12];
+byte buff_I2C[12];
 
 // user defined variables
 const int num_principal_components = 2;
@@ -75,9 +75,10 @@ void setup()
     Serial.begin(115200);
     SerialNina.begin(115200);
 
-    while (!digitalRead(button_start_pin) == HIGH)
+    while (!digitalRead(button_start_pin) == HIGH){
         // Serial.println("Startup paused!");
         continue;
+    }
 
     Wire.begin(i2c_transmissionbus);
     Wire.onRequest(requestEvent);
@@ -122,16 +123,20 @@ void loop()
                 }
                 // Serial.println("Startup finished!");
             }
-            else
-            {
-                // printFSRData(message_values);
-                continue;
-            }
+            // else
+            // {
+            //     printFSRData(message_values);
+            // }
         }
         else
         {
             SerialNina.readBytes(message_values, 8);
             update_centroid_distances(message_values);
+
+            // uncomment the next line for data collection
+            writeFSRData(message_values);
+
+            // uncomment for serial debugging purposes
             // printFSRData(message_values);
         }
     }
@@ -146,7 +151,7 @@ BLA::Matrix<num_centroids> distance_calc(BLA::Matrix<num_principal_components> p
         BLA::Matrix<1, 2> centroid = centroids.Submatrix<1, 2>(i, 0);
         distance(i) = ((centroid(0) - pc_selection(0)) * (centroid(0) - pc_selection(0))) + ((centroid(0, 1) - pc_selection(0, 1)) * (centroid(0, 1) - pc_selection(0, 1)));
     }
-    Serial << "pc_selection: " << pc_selection << '\n';
+    // Serial << "pc_selection: " << pc_selection << '\n';
     return distance;
 }
 
@@ -174,6 +179,16 @@ void printFSRData(uint8_t message[])
     Serial.print("\r\n");
 }
 
+
+void writeFSRData(uint8_t message[])
+{
+    for (int i = 0; i < 8; i++)
+    {
+        Serial.write(message[i]);
+    }
+}
+
+
 // function to start the update for the latest centroid distances, called when a new transmission is received
 void update_centroid_distances(uint8_t *message_values)
 {
@@ -192,7 +207,7 @@ void update_centroid_distances(uint8_t *message_values)
     fakebuffer[1] = distance_matrix(1);
     fakebuffer[2] = distance_matrix(2);
 
-    Serial << "distance matrix:" << distance_matrix << '\n';
+    // Serial << "distance matrix:" << distance_matrix << '\n';
 }
 
 void requestEvent()
